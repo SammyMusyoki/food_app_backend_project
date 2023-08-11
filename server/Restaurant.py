@@ -34,7 +34,7 @@ def get_restaurant(restaurant_id):
     restaurant_data = restaurant_schema.dump(restaurant)
     return jsonify(restaurant_data)
   
-@restaurants.route('/restaurants', methods=['POST'])
+@restaurants.route('/create-restaurant', methods=['POST'])
 def create_restauarants():
     data = request.get_json()
     restaurant = RestaurantSchema().load(data)

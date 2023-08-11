@@ -3,6 +3,9 @@ from sqlalchemy import ForeignKey
 from datetime import datetime
 from sqlalchemy.orm import validates
 from schemas import *
+from werkzeug.security import generate_password_hash, check_password_hash
+
+import jwt
 
 
 db = SQLAlchemy()
@@ -158,6 +161,22 @@ class User(db.Model):
     type = db.Column(db.Boolean, default=False)  
     blocked = db.Column(db.String)
     activity = db.Column(db.String)
+
+    def __init__(self, **kwargs):
+        self.user_name = kwargs.get('user_name')
+        self.email = kwargs.get('email')
+        self.password = kwargs.get('password')
+
+    def __rep__(self):
+        return "<User {}>".format(self.user_name)
+
+    def hash_password(self):
+        self.password = generate_password_hash(self.password).decode('utf8')
+
+    def check_password(self, password):
+        return check_password_hash(self.password, password)
+
+
 
 class Favourites(db.Model):
     __tablename__ ='favourite'

@@ -10,6 +10,8 @@ from flask_marshmallow import Marshmallow
 from werkzeug.security import generate_password_hash, check_password_hash
 from User import *
 
+import os
+
 main2 = Blueprint("main2",__name__)
 ma = Marshmallow()
 
@@ -20,7 +22,7 @@ app.config['SECRET_KEY'] = b'\x06\xf5\xb5\xe6\xf7\x1c\xbd\r\xc5e\xef\xb2\xf1\xcb
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres://steve:gzvhtFOUedOgHo9WaG2R5QCfcsXABXI8@dpg-cj5lg1acn0vc73d98li0-a.oregon-postgres.render.com/dbfoodapp'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-
+SECRET_KEY = os.getenv('SECRET_KEY', 'very_precious')
 
 jwt=JWTManager(app)
 
@@ -104,78 +106,80 @@ def guest():
 #         return jsonify(detail="User not logged in"),401
 
 # Login attempt 
-@app.route('/login', methods=['POST', 'GET'])
-def login():
-    data = request.get_json()
-    email = data.get('email')
-    password = data.get('password')
+# @app.route('/login', methods=['POST'])
+# def login():
+#     data = request.get_json()
+#     email = data.get('email')
+#     password = data.get('password')
 
-    user = User.query.filter_by(email=email).first()
+#     user = User.query.filter_by(email=email).first()
 
-    if user and user.confirm_password(password):
-        access_token = create_access_token(identity=user.user_id)
+#     if user and check_password_hash(user.password, password):
+#         access_token = create_access_token(identity=user.user_id)
         
-        redirect_url = 'our-menu'  # Default redirect URL
-        if user.user_role == 'owner':
-            redirect_url = 'admin-panel'
-        elif user.user_role == 'employee':
-            redirect_url = '/employee-dashboard'
+#         redirect_url = 'our-menu'  # Default redirect URL
+#         if user.user_role == 'owner':
+#             redirect_url = 'admin-panel'
+#         elif user.user_role == 'employee':
+#             redirect_url = '/employee-dashboard'
 
-        response_data = {
-            "token": access_token,
-            'user': {
-                'id': user.user_id,
-                'username': user.username,
-                'email': user.email,
-                'user_role': user.user_role,
-            },
-            'redirect_url': redirect_url
-        }
-        return jsonify(response_data), 200
-    else: 
-        return jsonify({'message': 'Invalid username or password'}), 401
+#         response_data = {
+#             "token": access_token,
+#             'user': {
+#                 'id': user.user_id,
+#                 'username': user.username,
+#                 'email': user.email,
+#                 'user_role': user.user_role,
+#             },
+#             'redirect_url': redirect_url
+#         }
+#         print(response_data)
+#         return jsonify(response_data), 200
+#     else: 
+#         print('Invalid credentials')
+#         return jsonify({'message': 'Invalid username or password'}), 401
     
 
-@app.route('/register', methods=['POST', 'GET'])
-def register():
-    data = request.get_json()
-    username = data.get('username')
-    email = data.get('email')
-    password = data.get('password')
-    confirm_password = data.get('confirm_password')
-    user_role = data.get('user_role')
+# @main2.route('/register', methods=['POST', 'GET'])
+# def register():
+#     data = request.get_json()
+#     username = data.get('username')
+#     email = data.get('email')
+#     password = data.get('password')
+#     confirm_password = data.get('confirm_password')
+#     user_role = data.get('user_role')
 
-    if not username or not email or not password or not confirm_password or not user_role:
-        return jsonify({'message': 'All fields are required'}), 400
+#     if not username or not email or not password or not confirm_password or not user_role:
+#         return jsonify({'message': 'All fields are required'}), 400
     
-    existing_user = User.query.filter_by(email=email).first()
-    if existing_user:
-        return jsonify({'message': 'User already exists!'}), 409
+#     existing_user = User.query.filter_by(email=email).first()
+#     if existing_user:
+#         return jsonify({'message': 'User already exists!'}), 409
     
-    new_user = User(username=username, email=email, password=password, confirm_password=confirm_password, user_role=user_role)
-    new_user.set_password(password)
-    db.session.add(new_user)
-    db.session.commit()
+#     new_user = User(username=username, email=email, password=password, confirm_password=confirm_password, user_role=user_role)
+#     new_user.set_password(password)
+#     db.session.add(new_user)
+#     db.session.commit()
 
-    access_token = create_access_token(identity=new_user.user_id)
+#     access_token = create_access_token(identity=new_user.user_id)
     
-    redirect_url = 'login'  # Default redirect URL
+#     redirect_url = 'login'  # Default redirect URL
 
-    response_data = {
-        "token": access_token,
-        'user': {
-            'id': new_user.user_id,
-            'username': new_user.username,
-            'email': new_user.email,
-            'user_role': new_user.user_role
-        },
-        'redirect_url':redirect_url
-    }
+#     response_data = {
+#         "token": access_token,
+#         'user': {
+#             'id': new_user.user_id,
+#             'username': new_user.username,
+#             'email': new_user.email,
+#             'user_role': new_user.user_role
+#         },
+#         'redirect_url':redirect_url
+#     }
 
-    return jsonify(response_data), 201
+#     return jsonify(response_data), 201
 
 
-@app.route('/user', methods=['GET'])
+@main2.route('/user', methods=['GET'])
 def get_all_users():
      users = User.query.all()
 
@@ -194,7 +198,7 @@ def get_all_users():
      return jsonify({'users': output})
 
  
-@app.route('/user/<user_id>', methods=['GET'])
+@main2.route('/user/<user_id>', methods=['GET'])
 def get_one_users(user_id):
 
     user = User.query.filter_by(user_id=user_id).first()
@@ -213,7 +217,7 @@ def get_one_users(user_id):
     return jsonify({'users': user_data})
     # pass
  
-@app.route('/user', methods=['POST'])
+@main2.route('/user', methods=['POST'])
 def user():
     data = request.get_json()
 
@@ -225,7 +229,7 @@ def user():
     
     return ({'message':'Welcome user'})
 
-@app.route('/user/<user_id>', methods=['PATCH'])
+@main2.route('/user/<user_id>', methods=['PATCH'])
 def promote_user(user_id):
     user = User.query.filter_by(user_id=user_id).first()
 
@@ -237,7 +241,7 @@ def promote_user(user_id):
 
     return jsonify({'message': 'User promoted successfully'})
 
-@app.route('/user/<user_id>', methods=['DELETE'])
+@main2.route('/user/<user_id>', methods=['DELETE'])
 def delete_user(user_id):
     user = User.query.filter_by(user_id=user_id).first()
 
@@ -249,7 +253,7 @@ def delete_user(user_id):
     
     return jsonify({'message': 'User has been deleted'})
 
-@app.route('/cart/<int:product_id>', methods=['POST'])
+@main2.route('/cart/<int:product_id>', methods=['POST'])
 def add_to_cart(product_id):
 
     product = Product.query.filter(Product.id == product_id)

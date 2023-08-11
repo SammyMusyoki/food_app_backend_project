@@ -1,4 +1,4 @@
-from main2 import app
+from main3 import app
 from model2 import db, User
 
 user_data = [

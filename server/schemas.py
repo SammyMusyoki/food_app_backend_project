@@ -1,4 +1,4 @@
-from marshmallow import Schema, fields
+from marshmallow import Schema, fields, validate
 class OwnerSchema(Schema):
     owner_id = fields.Integer()
     name = fields.String()
@@ -126,4 +126,14 @@ class SuperAdminSchema(Schema):
 
 
 
+class CreateSignupInputSchema(Schema):
+    # the 'required' argument ensures the field exists
+    username = fields.Str(required=True, validate=validate.Length(min=12))
+    email = fields.Email(required=True)
+    password = fields.Str(required=True, validate=validate.Length(min=15))
 
+
+class CreateLoginInputSchema(Schema):
+    # the'required' argument ensures the field exists
+    email = fields.Email(required=True)
+    password = fields.Str(required=True, validate=validate.Length(min=15))

@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, make_response
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from flask_migrate import Migrate
@@ -10,7 +10,7 @@ from main2 import main2
 from mpesa import mpesa
 from Stripe import stripe
 from werkzeug.wrappers import Response 
-
+from flask_restful import Api
 
 
 from Restaurant import restaurants
@@ -23,12 +23,12 @@ from Reviews import reviews
 
 
 app = Flask(__name__) 
+app.register_blueprint(main2)
 app.register_blueprint(restaurants)
 app.register_blueprint(user)
 app.register_blueprint(owners)
 app.register_blueprint(reviews)
 app.register_blueprint(mpesa)
-app.register_blueprint(main2)
 app.register_blueprint(stripe)
 
 
@@ -40,23 +40,39 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 migrate = Migrate(app, db)
 CORS(app)
 
-db.init_app(app)
+
 ma = Marshmallow(app)
+
+api = restful.Api(app=app)
+
+from Auth.routes import create_authentication_routes
+
+create_authentication_routes(api=api)
 
 @app.before_request
 def before_request():
-    if request.method == 'OPTIONS':
+    if request.method == ['OPTIONS', 'POST', 'PUT', 'DELETE', 'HEAD']:
         response = Response()
-        response.headers["Access-Control-Allow-Origin"] = "http://localhost:3002"
-        response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type"
-        response.headers["Access-Control-Allow-Methods"] = "POST"
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = '*'
         return response
 
+# def _build_cors_preflight_response():
+#     response = make_response()
+#     response.headers.add("Access-Control-Allow-Origin", "*")
+#     response.headers.add('Access-Control-Allow-Headers', "*")
+#     response.headers.add('Access-Control-Allow-Methods', "*")
+#     return response
 
-@app.route('/')
-def index():
-    return {"message": "success"}
+
+# @app.route('/')
+# def index():
+#     return {"message": "success"}
+db.init_app(app)
+with app.app_context():
+    db.create_all()
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0',port=5955)
+    app.run(host='0.0.0.0',port=5000)
