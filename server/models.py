@@ -37,16 +37,13 @@ class Order(db.Model):
     __tablename__ = 'order'
     order_id = db.Column(db.Integer, primary_key=True)
     menu_id = db.Column(db.Integer, ForeignKey('menu.menu_id'))
-    # customer_id = db.Column(db.Integer, db.ForeignKey('customer.customer_id'))
     total_price = db.Column(db.Integer)
     order_date_and_time = db.Column(db.DateTime)
     address = db.Column(db.String)
     payment_method = db.Column(db.String)
 
     deliveries = db.relationship('Deliveries', backref='order')
-    # menu = db.relationship('Menu', backref='orders')
-    
-    # customer = db.relationship('Customers', backref='orders')
+
 
 class Driver(db.Model):
     __tablename__ = 'driver'
@@ -84,13 +81,11 @@ class Customers(db.Model):
     __tablename__ = 'customers'
     customer_id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.user_id'))
-
     user_name = db.Column(db.String)
     password = db.Column(db.String)
     phone_number = db.Column(db.String)
     image = db.Column(db.String)
 
-    # orders = db.relationship('Order', backref='customer')
     customerReviews = db.relationship('CustomerReviews', backref='customer')
     user = db.relationship('User', backref='customer', uselist=False)
 
@@ -147,9 +142,6 @@ class Menu(db.Model):
     image = db.Column(db.String)
     
     orders = db.relationship("Order", backref = "menu")
-   
-    
-    # order_items = db.relationship('Order', backref='menu')
   
 
 class User(db.Model):
@@ -158,9 +150,12 @@ class User(db.Model):
     user_name = db.Column(db.String)
     email = db.Column(db.String)
     password = db.Column(db.String)
+    confirm_password = db.Column(db.String)
     type = db.Column(db.Boolean, default=False)  
     blocked = db.Column(db.String)
     activity = db.Column(db.String)
+    
+    
 
     def __init__(self, **kwargs):
         self.user_name = kwargs.get('user_name')
@@ -210,4 +205,4 @@ class SuperAdmin(db.Model):
             raise ValueError('User password is not valid, please try again')
         return password
 
-
+   

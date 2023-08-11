@@ -16,7 +16,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
-CORS(app)
+CORS(app, origins="http://localhost:5000") 
+
 stripe.api_key = "sk_test_51NaCrLDWZ8VYT067qJD7GMGRRTzNesXgPuOtirmWozS1Ntg6srUUfwu6Mo03Mrm1W5AZOZqTacuzk9LeKrNgvJ9y00re0LPdjZ"
 
 
@@ -36,5 +37,3 @@ def create_payment_intent():
     except Exception as e:
         return jsonify(error=str(e)), 500
 
-# if __name__ == '__main__':
-#     stripe.run(port=5555)

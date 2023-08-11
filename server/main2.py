@@ -1,28 +1,19 @@
 #app.py
-from flask import Flask, request, jsonify, make_response,redirect, url_for,Blueprint
-from flask_jwt_extended import create_access_token, get_jwt, get_jwt_identity,JWTManager,jwt_required
-import jwt
+from flask import Flask, request, jsonify,Blueprint
+from flask_jwt_extended import JWTManager,create_access_token
 from functools import wraps
-from flask_marshmallow import Marshmallow
 import uuid
+# from flask_sqlalchemy import SQLAlchemy
+from models import db,User,Owner,Customers,Driver,Admin,SuperAdmin
 from flask_migrate import Migrate
 from flask_marshmallow import Marshmallow
 from werkzeug.security import generate_password_hash, check_password_hash
-from User import *
+from schemas import *
 
-import os
 
-main2 = Blueprint("main2",__name__)
-ma = Marshmallow()
 
 app = Flask(__name__)
-ma.init_app(app)
-
-app.config['SECRET_KEY'] = b'\x06\xf5\xb5\xe6\xf7\x1c\xbd\r\xc5e\xef\xb2\xf1\xcb`\xd8'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres://steve:gzvhtFOUedOgHo9WaG2R5QCfcsXABXI8@dpg-cj5lg1acn0vc73d98li0-a.oregon-postgres.render.com/dbfoodapp'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-SECRET_KEY = os.getenv('SECRET_KEY', 'very_precious')
+main2=Blueprint("main2", __name__)
 
 jwt=JWTManager(app)
 
@@ -31,240 +22,350 @@ ma = Marshmallow(app)
 
 class UserSchema(ma.Schema):
     class Meta:
-        fields = ('user_id', 'username', 'email', 'password', 'user_role', 'blocked', 'activity')
+        fields = ('user_id', 'user_name', 'email', 'password','confirm_password', 'type', 'blocked', 'activity')
 
 user_schema = UserSchema()
 users_schema = UserSchema(many=True)
 
-def token_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        token = request.args.get('token')
-
-        if not token:
-            return({"message" : "Token is missing"})
-
-        try:
-            data = jwt.decode(token,app.config['SECRET_KEY'])
-            
-        except:
-            return ({"message": "Invalid token"})
-
-        return f(*args, **kwargs)
-    return decorated
-
-@app.route('/superadmin/<token>')
-@jwt_required(optional=True)
-def superadmin(token):
-    return jsonify(token=f"superadmin : {token}")
-
-@app.route('/admin/<token>')
-@jwt_required(optional=True)
-def admin(token):
-    return jsonify(token=f"admin : {token}")
-
-@app.route('/customer/<token>')
-@jwt_required(optional=True)
-def customer(token):
-    return jsonify(token=f"student : {token}")
-
-@app.route('/driver/<token>')
-@jwt_required(optional=True)
-def driver(token):
-    return jsonify(token=f"driver : {token}")
-
-@app.route('/orders')
-@jwt_required(optional=True)
-def orders():
-    details = get_jwt()
-    if details["user_role"]!='driver':
-        return redirect(url_for("guest"))
-    return jsonify(detail="info")
-
-@app.route('/guest')
-@jwt_required()
-def guest():
-    details = get_jwt()
-    return jsonify(detail=f"welcome {details['username']}")
     
-# @app.route('/login', methods=['POST','GET'])
-# def login():
-#     if request.method == 'POST':
-#         email = request.json.get('email',None)
-#         password = request.json.get('password',None)
-#         user = User.query.filter_by(email=email).first()
-#         if user:
-#             if user.confirm_password(password):
-#                 metadata = {
-#                    "user_role":user.user_role,
-#                    "username":user.username
-#                 }
-#                 token = create_access_token(identity=user.user_id, additional_claims=metadata)
-#                 return redirect(url_for(f'{user.user_role}',token=token))
-#                 # return jsonify(token=token)
-#             return jsonify(detail="password Incorrect"),401
-#         return jsonify(detail="User not logged in"),401
+from datetime import timedelta
 
-# Login attempt 
-# @app.route('/login', methods=['POST'])
-# def login():
-#     data = request.get_json()
-#     email = data.get('email')
-#     password = data.get('password')
-
-#     user = User.query.filter_by(email=email).first()
-
-#     if user and check_password_hash(user.password, password):
-#         access_token = create_access_token(identity=user.user_id)
-        
-#         redirect_url = 'our-menu'  # Default redirect URL
-#         if user.user_role == 'owner':
-#             redirect_url = 'admin-panel'
-#         elif user.user_role == 'employee':
-#             redirect_url = '/employee-dashboard'
-
-#         response_data = {
-#             "token": access_token,
-#             'user': {
-#                 'id': user.user_id,
-#                 'username': user.username,
-#                 'email': user.email,
-#                 'user_role': user.user_role,
-#             },
-#             'redirect_url': redirect_url
-#         }
-#         print(response_data)
-#         return jsonify(response_data), 200
-#     else: 
-#         print('Invalid credentials')
-#         return jsonify({'message': 'Invalid username or password'}), 401
-    
-
-# @main2.route('/register', methods=['POST', 'GET'])
-# def register():
-#     data = request.get_json()
-#     username = data.get('username')
-#     email = data.get('email')
-#     password = data.get('password')
-#     confirm_password = data.get('confirm_password')
-#     user_role = data.get('user_role')
-
-#     if not username or not email or not password or not confirm_password or not user_role:
-#         return jsonify({'message': 'All fields are required'}), 400
-    
-#     existing_user = User.query.filter_by(email=email).first()
-#     if existing_user:
-#         return jsonify({'message': 'User already exists!'}), 409
-    
-#     new_user = User(username=username, email=email, password=password, confirm_password=confirm_password, user_role=user_role)
-#     new_user.set_password(password)
-#     db.session.add(new_user)
-#     db.session.commit()
-
-#     access_token = create_access_token(identity=new_user.user_id)
-    
-#     redirect_url = 'login'  # Default redirect URL
-
-#     response_data = {
-#         "token": access_token,
-#         'user': {
-#             'id': new_user.user_id,
-#             'username': new_user.username,
-#             'email': new_user.email,
-#             'user_role': new_user.user_role
-#         },
-#         'redirect_url':redirect_url
-#     }
-
-#     return jsonify(response_data), 201
-
-
-@main2.route('/user', methods=['GET'])
-def get_all_users():
-     users = User.query.all()
-
-     output = []
-
-     for user in users:
-        user_data = {}
-        user_data['user_id'] = user.user_id
-        user_data['username'] = user.username
-        user_data['email'] = user.email
-        user_data['password'] = user.password
-        user_data['user_role'] = user.user_role
-        user_data['blocked'] = user.blocked
-        user_data['activity'] = user.activity
-        output.append(user_data)
-     return jsonify({'users': output})
-
- 
-@main2.route('/user/<user_id>', methods=['GET'])
-def get_one_users(user_id):
-
-    user = User.query.filter_by(user_id=user_id).first()
-
-    if not user:
-        return jsonify({'message': 'No user found!'})
-    
-    user_data = {}
-    user_data['user_id'] = user.user_id
-    user_data['username'] = user.username
-    user_data['email'] = user.email
-    user_data['password'] = user.password
-    user_data['user_role'] = user.user_role
-    user_data['blocked'] = user.blocked
-    user_data['activity'] = user.activity
-    return jsonify({'users': user_data})
-    # pass
- 
-@main2.route('/user', methods=['POST'])
-def user():
+@main2.route('/login', methods=['POST'])
+def login():
     data = request.get_json()
 
-    hashed_password = generate_password_hash(data['password'], method='scrypt')
+    email = data['email']
+    password = data['password']
 
-    new_user = User(username=data['username'],password=hashed_password, email=data['email'],user_role=data['user_role'],blocked=False,activity=False)
-    db.session.add(new_user)
-    db.session.commit()
+    user = User.query.filter_by(email=email).first()
+
+    if user and check_password_hash(user.password, password):
+        # Generate access token with a 1-minute expiration
+        expires = timedelta(hours=3)
+        token = create_access_token(identity=email, expires_delta=expires)
+        return jsonify({"token": token})
+    else:
+        return jsonify({'message': 'Invalid email or password'}), 401
+
+
+@main2.route("/register", methods =["POST"])
+def create_account():
+    user_name = request.json["user_name"]
+    email = request.json["email"]
+    password = request.json["password"]
+    type = request.json["type"]
+    confirm_password = request.json["confirm_password"]
+    blocked = request.json["blocked"]
+    activity = request.json["activity"]
     
-    return ({'message':'Welcome user'})
+   
 
-@main2.route('/user/<user_id>', methods=['PATCH'])
-def promote_user(user_id):
-    user = User.query.filter_by(user_id=user_id).first()
+    user_exists = User.query.filter_by(user_name=user_name, type=type).first()
 
-    if not user:
-        return jsonify({'message': 'No user found!'})
-    
-    user.admin = True
+    if user_exists:
+        return jsonify({"error": "Username already exists "})
+    else:
+        hashed_password= generate_password_hash(password)
+        new_user = User(user_name=user_name,email=email, password=hashed_password,type=type,blocked=blocked,activity=activity,confirm_password=confirm_password)
+
+        db.session.add(new_user)
+        db.session.commit()
+
+
+        # access_token = create_access_token(identity=new_user.id)
+        access_token = create_access_token(identity={'user_id': new_user.user_id, 'type': type})
+
+        return jsonify({
+        "user_id": new_user.user_id,
+        "user_name":user_name,
+        "email":email,
+        "type": type,
+        "access_token": access_token,
+        "password": password,
+        "confirm_password":confirm_password,
+        "blocked":blocked,
+        "activity":activity
+        
+        
+
+    })
+@app.route("/login", methods=["POST"])
+def login():
+    if request.method == "POST":
+        data = request.get_json()
+        email = data["email"]
+        password = data['password']
+        user = User.query.filter_by(email=email).first()
+        if user:
+            if check_password_hash(user.password,password):
+                token = create_access_token(identity=(email))
+                return jsonify({"token": token})
+            else:
+                return jsonify(response="wrong password"),401
+
+        else :
+            return jsonify(result="invalid Email"), 401    
+
+# OWNERS AUTHENTICATION
+
+@main2.route('/owner/register', methods=['POST'])
+def register_owner():
+    data = request.get_json()
+
+    name = data['name']
+    email = data['email']
+    password = data['password']
+    image = data.get('image')  
+
+    owner_exists = Owner.query.filter_by(email=email).first()
+    if owner_exists:
+        return jsonify({"error": "Email already exists"})
+
+    hashed_password = generate_password_hash(password)
+    new_owner = Owner(name=name, email=email, password=hashed_password, image=image)
+
+    db.session.add(new_owner)
     db.session.commit()
 
-    return jsonify({'message': 'User promoted successfully'})
+    access_token = create_access_token(identity={'owner_id': new_owner.owner_id})
 
-@main2.route('/user/<user_id>', methods=['DELETE'])
-def delete_user(user_id):
-    user = User.query.filter_by(user_id=user_id).first()
+    return jsonify({
+        "owner_id": new_owner.owner_id,
+        "name": name,
+        "email": email,
+        "image": image,
+        "access_token": access_token
+    }), 201
 
-    if not user:
-        return jsonify({'message': 'No user found!'})
-    
-    db.session.delete(user)
+@main2.route('/owner/login', methods=['POST'])
+def login_owner():
+    data = request.get_json()
+
+    email = data['email']
+    password = data['password']
+
+    owner = Owner.query.filter_by(email=email).first()
+
+    if owner:
+        if check_password_hash(owner.password, password):
+            access_token = create_access_token(identity={'owner_id': owner.owner_id})
+            return jsonify({"token": access_token}), 200
+        else:
+            return jsonify({'message': 'Wrong password'}), 401
+    else:
+        return jsonify({'message': 'Invalid email'}), 401
+
+# customer authentication
+
+@main2.route('/customers/register', methods=['POST'])
+def register_customer():
+    data = request.get_json()
+
+    user_name = data['user_name']
+    password = data['password']
+    phone_number = data['phone_number']
+    image = data.get('image')  
+
+ 
+    customer_exists = Customers.query.filter_by(user_name=user_name).first()
+    if customer_exists:
+        return jsonify({"error": "Username already exists"})
+
+    hashed_password = generate_password_hash(password)
+    new_customer = Customers(user_name=user_name, password=hashed_password, phone_number=phone_number, image=image)
+
+    db.session.add(new_customer)
     db.session.commit()
-    
-    return jsonify({'message': 'User has been deleted'})
 
-@main2.route('/cart/<int:product_id>', methods=['POST'])
-def add_to_cart(product_id):
+    access_token = create_access_token(identity={'customer_id': new_customer.customer_id})
 
-    product = Product.query.filter(Product.id == product_id)
-    cart_item = CartItem(product=product)
-    db.session.add(cart_item)
+    return jsonify({
+        "customer_id": new_customer.customer_id,
+        "user_name": user_name,
+        "phone_number": phone_number,
+        "image": image,
+        "access_token": access_token
+    }), 201
+
+@main2.route('/customers/login', methods=['POST'])
+def login_customer():
+    data = request.get_json()
+
+    user_name = data['user_name']
+    password = data['password']
+
+    customer = Customers.query.filter_by(user_name=user_name).first()
+
+    if customer:
+        if check_password_hash(customer.password, password):
+            access_token = create_access_token(identity={'customer_id': customer.customer_id})
+            return jsonify({"token": access_token}), 200
+        else:
+            return jsonify({'message': 'Wrong password'}), 401
+    else:
+        return jsonify({'message': 'Invalid user name'}), 401
+
+
+# drivers authentication login and register
+
+@main2.route('/driver/register', methods=['POST'])
+def register_driver():
+    data = request.get_json()
+
+    name = data['name']
+    email = data['email']
+    password = data['password']
+    phone_number = data['phone_number']
+    image = data.get('image') 
+    current_location = data.get('current_location')  
+
+    driver_exists = Driver.query.filter_by(email=email).first()
+    if driver_exists:
+        return jsonify({"error": "Email already exists"})
+
+    hashed_password = generate_password_hash(password)
+    new_driver = Driver(name=name, email=email, password=hashed_password, phone_number=phone_number,
+                        image=image, current_location=current_location)
+
+    db.session.add(new_driver)
     db.session.commit()
 
-    return jsonify({'message': 'User has been deleted'})
+    access_token = create_access_token(identity={'driver_id': new_driver.driver_id})
 
-    # return render_tempate('home.html', product=products)
-# if __name__ == '__main__':
-#     # with app.app_context():
-#     #     db.create_all()
-#     app.run(port=5856)
+    return jsonify({
+        "driver_id": new_driver.driver_id,
+        "name": name,
+        "email": email,
+        "phone_number": phone_number,
+        "image": image,
+        "current_location": current_location,
+        "access_token": access_token
+    }), 201
+
+@main2.route('/driver/login', methods=['POST'])
+def login_driver():
+    data = request.get_json()
+
+    email = data['email']
+    password = data['password']
+
+    driver = Driver.query.filter_by(email=email).first()
+
+    if driver:
+        if check_password_hash(driver.password, password):
+            access_token = create_access_token(identity={'driver_id': driver.driver_id})
+            return jsonify({"token": access_token}), 200
+        else:
+            return jsonify({'message': 'Wrong password'}), 401
+    else:
+        return jsonify({'message': 'Invalid email'}), 401
+
+    
+    
+# admin
+@main2.route('/admin/register', methods=['POST'])
+def register_admin():
+    data = request.get_json()
+
+    name = data['name']
+    password = data['password']
+    image = data.get('image')  
+    customer_id = data.get('customer_id')  
+    restaurant_id = data.get('restaurant_id') 
+    owner_id = data.get('owner_id')  
+
+    admin_exists = Admin.query.filter_by(name=name).first()
+    if admin_exists:
+        return jsonify({"error": "Admin name already exists"})
+
+    hashed_password = generate_password_hash(password)
+    new_admin = Admin(name=name, password=hashed_password, image=image,
+                      customer_id=customer_id, restaurant_id=restaurant_id, owner_id=owner_id)
+
+    db.session.add(new_admin)
+    db.session.commit()
+
+    access_token = create_access_token(identity={'admin_id': new_admin.admin_id})
+
+    return jsonify({
+        "admin_id": new_admin.admin_id,
+        "name": name,
+        "image": image,
+        "customer_id": customer_id,
+        "restaurant_id": restaurant_id,
+        "owner_id": owner_id,
+        "access_token": access_token
+    }), 201
+
+@main2.route('/admin/login', methods=['POST'])
+def login_admin():
+    data = request.get_json()
+
+    name = data['name']
+    password = data['password']
+
+    admin = Admin.query.filter_by(name=name).first()
+
+    if admin:
+        if check_password_hash(admin.password, password):
+            access_token = create_access_token(identity={'admin_id': admin.admin_id})
+            return jsonify({"token": access_token}), 200
+        else:
+            return jsonify({'message': 'Wrong password'}), 401
+    else:
+        return jsonify({'message': 'Invalid name'}), 401
+
+
+# superadmin
+
+@main2.route('/superadmin/register', methods=['POST'])
+def register_superadmin():
+    data = request.get_json()
+
+    name = data['name']
+    password = data['password']
+    image = data.get('image') 
+    customer_id = data.get('customer_id')  
+    restaurant_id = data.get('restaurant_id')  
+    owner_id = data.get('owner_id')
+
+    superadmin_exists = SuperAdmin.query.filter_by(name=name).first()
+    if superadmin_exists:
+        return jsonify({"error": "SuperAdmin name already exists"})
+
+    hashed_password = generate_password_hash(password)
+    new_superadmin = SuperAdmin(name=name, password=hashed_password, image=image,
+                                customer_id=customer_id, restaurant_id=restaurant_id, owner_id=owner_id)
+
+    db.session.add(new_superadmin)
+    db.session.commit()
+
+    access_token = create_access_token(identity={'superadmin_id': new_superadmin.superadmin_id})
+
+    return jsonify({
+        "superadmin_id": new_superadmin.superadmin_id,
+        "name": name,
+        "image": image,
+        "customer_id": customer_id,
+        "restaurant_id": restaurant_id,
+        "owner_id": owner_id,
+        "access_token": access_token
+    }), 201
+
+@main2.route('/superadmin/login', methods=['POST'])
+def login_superadmin():
+    data = request.get_json()
+
+    name = data['name']
+    password = data['password']
+
+    superadmin = SuperAdmin.query.filter_by(name=name).first()
+
+    if superadmin:
+        if check_password_hash(superadmin.password, password):
+            access_token = create_access_token(identity={'superadmin_id': superadmin.superadmin_id})
+            return jsonify({"token": access_token}), 200
+        else:
+            return jsonify({'message': 'Wrong password'}), 401
+    else:
+        return jsonify({'message': 'Invalid name'}), 401

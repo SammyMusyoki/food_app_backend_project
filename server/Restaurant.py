@@ -1,6 +1,9 @@
 from flask import Blueprint, jsonify,Flask,request,make_response
+from datetime import datetime
 from flask_marshmallow import Marshmallow
 from models import Restaurant,db,Menu,Order,Payment
+
+from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
 
 from schemas import *
 
@@ -11,19 +14,21 @@ ma = Marshmallow()
 
 app = Flask(__name__)
 ma.init_app(app)
+jwt = JWTManager(app)
 
 @restaurants.route('/')
 def index():
     return "This is the Products page"
 
 # RESTAURANTS
+# get all restaurant route
 @restaurants.route('/restaurants', methods=['GET'])
 def get_all_restaurants():
     restaurants_list = Restaurant.query.all()
     restaurant_schema = RestaurantSchema(many=True)
     restaurant_data = restaurant_schema.dump(restaurants_list)  
     return jsonify(restaurant_data)
-  
+#   get restaurant by id route
 @restaurants.route('/restaurants/<int:restaurant_id>', methods=['GET'])
 def get_restaurant(restaurant_id):
     restaurant = Restaurant.query.filter_by(restaurant_id=restaurant_id).first()
@@ -33,8 +38,8 @@ def get_restaurant(restaurant_id):
     restaurant_schema = RestaurantSchema()
     restaurant_data = restaurant_schema.dump(restaurant)
     return jsonify(restaurant_data)
-  
-@restaurants.route('/create-restaurant', methods=['POST'])
+#   creating  A new restaurant route
+@restaurants.route('/restaurants', methods=['POST'])
 def create_restauarants():
     data = request.get_json()
     restaurant = RestaurantSchema().load(data)
@@ -44,7 +49,7 @@ def create_restauarants():
     restaurant_data = RestaurantSchema().dump(new_restaurant)
     return make_response(jsonify(restaurant_data), 201)
 
-
+# updating some details of the restaurant route
 @restaurants.route('/restaurants/<int:restaurant_id>', methods=['PATCH'])
 def update_restaurant_details(restaurant_id):
     restaurant = Restaurant.query.filter_by(restaurant_id = restaurant_id).first()
@@ -58,7 +63,7 @@ def update_restaurant_details(restaurant_id):
     restaurant_data = RestaurantSchema().dump(restaurant)
     return make_response(jsonify(restaurant_data))
 
-
+# delete route to delete a restaurant
 @restaurants.route('/restaurants/<int:restaurant_id>', methods=['DELETE'])
 def delete_restaurant(restaurant_id):
     restaurant = Restaurant.query.filter_by(restaurant_id=restaurant_id).first()
@@ -244,6 +249,30 @@ def delete_payment(payment_id):
     db.session.commit()
 
     return jsonify({'message': 'Payment deleted succesfully'}), 204
+
+
+
+restaurant_schema = RestaurantSchema()
+restaurants_schema = RestaurantSchema(many=True)
+
+@restaurants.route('/search', methods=['GET'])
+def search_restaurants():
+    query_params = request.args.to_dict()
+
+    filtered_query = Restaurant.query
+
+    if 'q' in query_params:
+        filtered_query = filtered_query.filter(Restaurant.restaurant_name.ilike(f"%{query_params['q']}%"))
+
+    if 'rating' in query_params:
+        filtered_query = filtered_query.filter(Restaurant.rating >= float(query_params['rating']))
+
+    search_results = filtered_query.all()
+
+    # Serializing the results using the schema
+    serialized_results = restaurants_schema.dump(search_results)
+
+    return jsonify(serialized_results)
 
 
 

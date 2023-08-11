@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, make_response
+from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from flask_migrate import Migrate
@@ -6,6 +6,7 @@ from datetime import datetime
 from flask_marshmallow import Marshmallow
 from models import db
 from schemas import *
+from flask_jwt_extended import JWTManager
 from main2 import main2
 from mpesa import mpesa
 from Stripe import stripe
@@ -32,7 +33,7 @@ app.register_blueprint(mpesa)
 app.register_blueprint(stripe)
 
 
-
+app.config['SECRET_KEY'] = b'\x06\xf5\xb5\xe6\xf7\x1c\xbd\r\xc5e\xef\xb2\xf1\xcb`\xd8'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://steve:gzvhtFOUedOgHo9WaG2R5QCfcsXABXI8@dpg-cj5lg1acn0vc73d98li0-a.oregon-postgres.render.com/dbfoodapp'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -40,22 +41,16 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 migrate = Migrate(app, db)
 CORS(app)
 
-
+db.init_app(app)
 ma = Marshmallow(app)
-
-api = restful.Api(app=app)
-
-from Auth.routes import create_authentication_routes
-
-create_authentication_routes(api=api)
 
 @app.before_request
 def before_request():
-    if request.method == ['OPTIONS', 'POST', 'PUT', 'DELETE', 'HEAD']:
+    if request.method == 'OPTIONS':
         response = Response()
-        response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Allow-Headers"] = "*"
-        response.headers["Access-Control-Allow-Methods"] = '*'
+        response.headers["Access-Control-Allow-Origin"] = "http://localhost:3002"
+        response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type"
+        response.headers["Access-Control-Allow-Methods"] = "POST"
         return response
 
 # def _build_cors_preflight_response():

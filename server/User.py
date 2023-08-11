@@ -4,6 +4,7 @@ from models import User,db,Customers,Driver,Admin,SuperAdmin,Favourites
 from schemas import *
 
 
+
 user = Blueprint("User", __name__)
 ma = Marshmallow(user)
 

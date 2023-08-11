@@ -99,6 +99,7 @@ class UserSchema(Schema):
     user_name = fields.String()
     email = fields.String()
     password = fields.String()
+    confirm_password = fields.String()
     type = fields.Boolean()
     blocked = fields.String()
     activity = fields.String()
