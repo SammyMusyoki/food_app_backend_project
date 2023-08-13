@@ -53,38 +53,38 @@ def create_account():
     user_name = request.json["user_name"]
     email = request.json["email"]
     password = request.json["password"]
-    type = request.json["type"]
+    user_role = request.json["user_role"]
     confirm_password = request.json["confirm_password"]
-    blocked = request.json["blocked"]
-    activity = request.json["activity"]
+    # blocked = request.json["blocked"]
+    # activity = request.json["activity"]
     
    
 
-    user_exists = User.query.filter_by(user_name=user_name, type=type).first()
+    user_exists = User.query.filter_by(user_name=user_name, user_role=user_role).first()
 
     if user_exists:
         return jsonify({"error": "Username already exists "})
     else:
         hashed_password= generate_password_hash(password)
-        new_user = User(user_name=user_name,email=email, password=hashed_password,type=type,blocked=blocked,activity=activity,confirm_password=confirm_password)
+        new_user = User(user_name=user_name,email=email, password=hashed_password,user_role=user_role, confirm_password=confirm_password)
 
         db.session.add(new_user)
         db.session.commit()
 
 
         # access_token = create_access_token(identity=new_user.id)
-        access_token = create_access_token(identity={'user_id': new_user.user_id, 'type': type})
+        access_token = create_access_token(identity={'user_id': new_user.user_id, 'user_role': user_role})
 
         return jsonify({
         "user_id": new_user.user_id,
         "user_name":user_name,
         "email":email,
-        "type": type,
+        "user_role": user_role,
         "access_token": access_token,
         "password": password,
         "confirm_password":confirm_password,
-        "blocked":blocked,
-        "activity":activity
+        # "blocked":blocked,
+        # "activity":activity
         
         
 
