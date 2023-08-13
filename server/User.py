@@ -52,22 +52,17 @@ def create_customers():
   
 
 @user.route('/customers/<int:customer_id>', methods=['PATCH'])
-def update_customer(customer_id):
+def update_customer_details(customer_id):
+    customer = Customer.query.filter_by(customer_id = customer_id).first()
     data = request.get_json()
+    customers = CustomersSchema().load(data)
+    for field, value in customers.items():
+        setattr(customer, field, value)
+    db.session.add(customer)
+    db.session.commit() 
 
-    customers = Customers.query.filter_by(customer_id=customer_id).first()
-    if not customers:
-        return jsonify({'message': "The customer you are looking for is not found"}), 404
-
-    customer_schema = CustomersSchema()
-    updated_customer_data = customer_schema.load(data, partial=True)
-
-    for key, value in updated_customer_data.get('customers', {}).items():
-        setattr(customers, key, value)
-
-    db.session.commit()
-    customer_data = customer_schema.dump(customers)
-    return jsonify(customer_data)
+    customer_data = CustomerSchema().dump(customer)
+    return make_response(jsonify(customer_data))
 
 
 @user.route('/customers/<int:customer_id>', methods=['DELETE'])
@@ -112,22 +107,18 @@ def create_drivers():
     driver_data = DriverSchema().dump(new_driver)
     return make_response(jsonify(driver_data), 201)
 
-@user.route('/drivers/<int:driver_id>', methods=['PATCH'])
-def update_driver(driver_id):
+@user.route('/driver/<int:driver_id>', methods=['PATCH'])
+def update_driver_details(driver_id):
+    driver = User.query.filter_by(driver_id = driver_id).first()
     data = request.get_json()
+    drivers = DriverSchema().load(data)
+    for field, value in drivers.items():
+        setattr(driver, field, value)
+    db.session.add(driver)
+    db.session.commit() 
 
-    driver = Driver.query.filter_by(driver_id=driver_id).first()
-    if not driver:
-        return jsonify({'message': "The driver you are looking for is not found"}), 404
-
-    driver_schema = DriverSchema()
-    updated_driver_data = driver_schema.load(data, partial=True)
-
-    for key, value in updated_driver_data.get('driver', {}).items():
-        setattr(driver, key, value)
-
-    db.session.commit()
-    driver_data = driver_schema
+    driver_data = DriverSchema().dump(driver)
+    return make_response(jsonify(driver_data))
     
 @user.route('/drivers/<int:driver_id>', methods=['DELETE'])
 def delete_driver(driver_id):
@@ -176,22 +167,18 @@ def create_user():
     user_data = user_schema.dump(new_user)
     return jsonify(user_data), 201
 
-@user.route('/user/<int:user_id>', methods=['PATCH'])
-def update_user(user_id):
+@user.route('/users/<int:user_id>', methods=['PATCH'])
+def update_user_details(user_id):
+    user = User.query.filter_by(user_id = user_id).first()
     data = request.get_json()
+    users = UserSchema().load(data)
+    for field, value in users.items():
+        setattr(user, field, value)
+    db.session.add(user)
+    db.session.commit() 
 
-    user = User.query.filter_by(user_id=user_id).first()
-    if not user:
-        return jsonify({'message': "The user you are looking for is not found"}), 404
-
-    user_schema = UserSchema()
-    updated_user_data = user_schema.load(data, partial=True)
-
-    for key, value in updated_user_data.get('user', {}).items():
-        setattr(user, key, value)
-
-    db.session.commit()
-    user_data = user_schema
+    user_data = UserSchema().dump(user)
+    return make_response(jsonify(user_data))
     
 @user.route('/user/<int:user_id>', methods=['DELETE'])
 def delete_user(user_id):

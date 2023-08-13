@@ -28,29 +28,29 @@ user_schema = UserSchema()
 users_schema = UserSchema(many=True)
 
     
-from datetime import timedelta
+# from datetime import timedelta
 
-@main2.route('/login', methods=['POST'])
-def login():
-    data = request.get_json()
+# @main2.route('/login', methods=['POST'])
+# def login():
+#     data = request.get_json()
 
-    email = data['email']
-    password = data['password']
+#     email = data['email']
+#     password = data['password']
 
-    user = User.query.filter_by(email=email).first()
+#     user = User.query.filter_by(email=email).first()
 
-    if user and check_password_hash(user.password, password):
-        # Generate access token with a 1-minute expiration
-        expires = timedelta(hours=3)
-        token = create_access_token(identity=email, expires_delta=expires)
-        return jsonify({"token": token})
-    else:
-        return jsonify({'message': 'Invalid email or password'}), 401
+#     if user and check_password_hash(user.password, password):
+#         # Generate access token with a 1-minute expiration
+#         expires = timedelta(hours=3)
+#         token = create_access_token(identity=email, expires_delta=expires)
+#         return jsonify({"token": token})
+#     else:
+#         return jsonify({'message': 'Invalid email or password'}), 401
 
 
 @main2.route("/register", methods =["POST"])
 def create_account():
-    user_name = request.json["user_name"]
+    user_name = request.json["username"]
     email = request.json["email"]
     password = request.json["password"]
     user_role = request.json["user_role"]
@@ -89,7 +89,7 @@ def create_account():
         
 
     })
-@app.route("/login", methods=["POST"])
+@main2.route("/login", methods=["POST"])
 def login():
     if request.method == "POST":
         data = request.get_json()
